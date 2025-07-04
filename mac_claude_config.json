@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "tableau": {
+      "command": "ssh",
+      "args": [
+        "your-username@your-linux-ip",
+        "cd /home/jtapia/test-claude/tableau-mcp-server && node dist/index.js"
+      ],
+      "env": {
+        "NODE_ENV": "production"
+      }
+    }
+  }
+}

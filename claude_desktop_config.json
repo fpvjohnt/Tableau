@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "tableau": {
+      "command": "node",
+      "args": ["dist/index.js"],
+      "cwd": "/home/jtapia/test-claude/tableau-mcp-server",
+      "env": {
+        "NODE_ENV": "production"
+      }
+    }
+  }
+}
