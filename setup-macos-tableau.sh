@@ -147,14 +147,14 @@ chmod +x tableau-bridge-minimal.js
 echo
 echo -e "${YELLOW}🧪 Step 3: Testing Tableau Detection...${NC}"
 
-if [ ! -f "tableau-bridge-minimal.js" ]; then
-    echo -e "${RED}❌ tableau-bridge-minimal.js not found${NC}"
-    echo "Please make sure the bridge script is in the current directory"
+if [ ! -f "tableau-mcp-server.js" ]; then
+    echo -e "${RED}❌ tableau-mcp-server.js not found${NC}"
+    echo "Please make sure the MCP server script is in the current directory"
     exit 1
 fi
 
 echo "Running detection test..."
-TEST_RESULT=$(node tableau-bridge-minimal.js --test 2>&1)
+TEST_RESULT=$(node tableau-mcp-server.js --test 2>&1)
 TEST_EXIT_CODE=$?
 
 echo "$TEST_RESULT"
@@ -198,7 +198,7 @@ cat > "$CLAUDE_CONFIG_FILE" <<EOF
   "mcpServers": {
     "tableau-desktop": {
       "command": "node",
-      "args": ["$CURRENT_DIR/tableau-bridge-minimal.js"],
+      "args": ["$CURRENT_DIR/tableau-mcp-server.js"],
       "env": {
         "NODE_PATH": "$CURRENT_DIR"
       }
@@ -225,7 +225,7 @@ echo "   • Ask: 'List worksheets and dashboards'"
 echo "   • Ask: 'Create a new worksheet called Test Sheet'"
 echo
 echo "3. 🛠️  Manual testing commands:"
-echo "   node tableau-bridge-minimal.js --test    # Test detection"
+echo "   node tableau-mcp-server.js --test    # Test detection"
 echo
 echo -e "${YELLOW}Available MCP tools:${NC}"
 echo "• tableau_detect_state - Check what's currently open"
@@ -233,6 +233,11 @@ echo "• tableau_list_sheets - List all worksheets/dashboards"
 echo "• tableau_new_worksheet - Create new worksheet"
 echo "• tableau_new_dashboard - Create new dashboard"
 echo "• tableau_add_calculated_field - Add calculated fields"
+echo "• tableau_list_templates - Show available worksheet templates"
+echo "• tableau_create_template - Create worksheet from template"
+echo "• tableau_list_kpis - Show all business KPIs"
+echo "• tableau_create_kpi_dashboard - Create dashboard with all KPIs"
+echo "• tableau_add_business_kpi - Add specific business KPI"
 echo
 echo -e "${YELLOW}Data schema available:${NC}"
 echo "• Avaya call data with KPIs"

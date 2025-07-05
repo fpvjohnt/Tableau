@@ -1,13 +1,23 @@
 #!/usr/bin/env node
 
 /**
- * Minimal Tableau Desktop Bridge for macOS
+ * Tableau Desktop MCP Server for macOS
+ * Direct MCP server for Claude Desktop integration
  * Detects open workbooks and automates worksheet/dashboard creation
  * Requires: macOS with Tableau Desktop open and Accessibility permissions
  */
 
 const { execSync } = require('child_process');
 const readline = require('readline');
+
+// Load data schema for templates
+let dataSchema;
+try {
+  dataSchema = require('./tableau-data-schema.js');
+} catch (error) {
+  console.error('Warning: tableau-data-schema.js not found. Template features will be limited.');
+  dataSchema = { worksheetTemplates: {}, businessKPIs: {} };
+}
 
 // === CONFIGURATION ===
 const TABLEAU_APP_NAME = 'Tableau Desktop';
@@ -348,6 +358,82 @@ async function addCalculatedField(fieldName, formula) {
   }
 }
 
+async function createWorksheetFromTemplate(templateName) {
+  try {
+    const template = dataSchema.getWorksheetTemplate ? dataSchema.getWorksheetTemplate(templateName) : dataSchema.worksheetTemplates[templateName];
+    
+    if (!template) {
+      throw new Error(`Template '${templateName}' not found`);
+    }
+
+    // Create the worksheet
+    const worksheetResult = await createWorksheet(template.name);
+    
+    if (!worksheetResult.success) {
+      return worksheetResult;
+    }
+
+    // Add calculated fields if template has them
+    if (template.calculatedFields) {
+      for (const [fieldName, formula] of Object.entries(template.calculatedFields)) {
+        await delay(1000);
+        await addCalculatedField(fieldName, formula);
+      }
+    }
+
+    return {
+      success: true,
+      message: `Template worksheet '${template.name}' created successfully`,
+      templateName: templateName,
+      worksheetName: template.name,
+      description: template.description
+    };
+
+  } catch (error) {
+    return {
+      success: false,
+      message: `Failed to create template worksheet: ${error.message}`,
+      templateName: templateName
+    };
+  }
+}
+
+async function createKPIDashboard() {
+  try {
+    // Create new dashboard
+    const dashboardResult = await createDashboard('KPI Dashboard');
+    
+    if (!dashboardResult.success) {
+      return dashboardResult;
+    }
+
+    // Add calculated fields for each KPI
+    const kpis = dataSchema.businessKPIs || {};
+    let kpiCount = 0;
+    
+    for (const [kpiName, kpiData] of Object.entries(kpis)) {
+      await delay(1500);
+      const fieldResult = await addCalculatedField(kpiName, kpiData.formula);
+      if (fieldResult.success) {
+        kpiCount++;
+      }
+    }
+
+    return {
+      success: true,
+      message: `KPI Dashboard created with ${kpiCount} calculated fields`,
+      dashboardName: 'KPI Dashboard',
+      kpiCount: kpiCount
+    };
+
+  } catch (error) {
+    return {
+      success: false,
+      message: `Failed to create KPI dashboard: ${error.message}`
+    };
+  }
+}
+
 // === MCP PROTOCOL HANDLERS ===
 const tools = {
   "tableau_detect_state": {
@@ -388,6 +474,68 @@ const tools = {
     description: "Add a calculated field to the current workbook",
     params: { fieldName: "string", formula: "string" },
     handler: ({ fieldName, formula }) => addCalculatedField(fieldName, formula)
+  },
+
+  "tableau_list_templates": {
+    description: "List all available worksheet templates",
+    handler: async () => {
+      const templates = dataSchema.worksheetTemplates || {};
+      return {
+        success: true,
+        templates: Object.keys(templates).map(key => ({
+          name: key,
+          displayName: templates[key].name,
+          description: templates[key].description,
+          dataSource: templates[key].dataSource
+        }))
+      };
+    }
+  },
+
+  "tableau_create_template": {
+    description: "Create a worksheet from a predefined template",
+    params: { templateName: "string" },
+    handler: ({ templateName }) => createWorksheetFromTemplate(templateName)
+  },
+
+  "tableau_list_kpis": {
+    description: "List all available business KPIs and their formulas",
+    handler: async () => {
+      const kpis = dataSchema.businessKPIs || {};
+      return {
+        success: true,
+        kpis: Object.keys(kpis).map(key => ({
+          name: key,
+          formula: kpis[key].formula,
+          units: kpis[key].units,
+          target: kpis[key].target,
+          dataSource: kpis[key].dataSource
+        }))
+      };
+    }
+  },
+
+  "tableau_create_kpi_dashboard": {
+    description: "Create a dashboard with all business KPI calculated fields",
+    handler: createKPIDashboard
+  },
+
+  "tableau_add_business_kpi": {
+    description: "Add a specific business KPI as a calculated field",
+    params: { kpiName: "string" },
+    handler: async ({ kpiName }) => {
+      const kpis = dataSchema.businessKPIs || {};
+      const kpi = kpis[kpiName];
+      
+      if (!kpi) {
+        return {
+          success: false,
+          message: `KPI '${kpiName}' not found`
+        };
+      }
+
+      return addCalculatedField(kpiName, kpi.formula);
+    }
   }
 };
 
@@ -402,7 +550,7 @@ async function handleMCPMessage(message) {
         result: {
           protocolVersion: '2024-11-05',
           capabilities: { tools: {} },
-          serverInfo: { name: 'tableau-desktop-bridge', version: '1.0.0' }
+          serverInfo: { name: 'tableau-desktop-mcp-server', version: '1.0.0' }
         },
         id: request.id
       };
@@ -496,7 +644,7 @@ async function main() {
     terminal: false
   });
 
-  console.error('Tableau Desktop Bridge starting...');
+  console.error('Tableau Desktop MCP Server starting...');
   console.error('Waiting for MCP messages on stdin...');
 
   rl.on('line', async (line) => {
@@ -509,7 +657,7 @@ async function main() {
   });
 
   rl.on('close', () => {
-    console.error('Bridge shutting down...');
+    console.error('MCP Server shutting down...');
     process.exit(0);
   });
 }
@@ -527,7 +675,7 @@ process.on('SIGTERM', () => {
 
 if (require.main === module) {
   main().catch(error => {
-    console.error('Bridge error:', error);
+    console.error('MCP Server error:', error);
     process.exit(1);
   });
 }

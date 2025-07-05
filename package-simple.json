@@ -1,0 +1,25 @@
+{
+  "name": "tableau-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP server for Tableau Desktop automation on macOS",
+  "main": "tableau-mcp-server.js",
+  "scripts": {
+    "test": "node tableau-mcp-server.js --test",
+    "start": "node tableau-mcp-server.js",
+    "setup": "./setup-macos-tableau.sh"
+  },
+  "keywords": [
+    "mcp",
+    "tableau", 
+    "automation",
+    "macos",
+    "applescript",
+    "claude"
+  ],
+  "author": "Claude AI Assistant",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "os": ["darwin"]
+}

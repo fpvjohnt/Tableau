@@ -40,9 +40,9 @@ brew install node
 
 ```bash
 # Test detection
-node tableau-bridge-minimal.js --test
+node tableau-mcp-server.js --test
 
-# Test template creator
+# Test template creator  
 ./tableau-template-creator.js list-templates
 ```
 
@@ -60,7 +60,8 @@ Then ask Claude:
 
 ## 📋 What You Get
 
-- **Tableau Desktop Automation** - Create worksheets/dashboards
+- **Direct MCP Server** - No bridge needed, runs locally
+- **Tableau Desktop Automation** - Create worksheets/dashboards  
 - **Business KPIs** - MTTR, SLA compliance, call metrics
 - **Data Schema** - Avaya, incident/chat data, manager lookup
 - **Templates** - Pre-built analysis worksheets
